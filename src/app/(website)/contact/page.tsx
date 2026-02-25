@@ -1,0 +1,142 @@
+import { Phone, Mail, MapPin, Clock, MessageCircle } from "lucide-react";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
+import { ContactForm } from "@/components/website/ContactForm";
+import { createMetadata } from "@/lib/seo";
+
+export const metadata = createMetadata({
+  title: "Contact Us",
+  description:
+    "Get in touch with Abhishek Jewelers — visit our store, call us, or send us a message. We're here to help you find the perfect jewelry.",
+  path: "/contact",
+  keywords: ["contact abhishek jewelers", "jewelry store location", "jewelry store phone"],
+});
+
+export default function ContactPage() {
+  return (
+    <div className="py-8 md:py-12">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <Breadcrumb
+          homeHref="/"
+          items={[
+            { label: "Home", href: "/" },
+            { label: "Contact" },
+          ]}
+        />
+
+        <div className="mt-6">
+          <h1 className="font-heading text-3xl font-bold text-charcoal-700 sm:text-4xl">
+            Get In Touch
+          </h1>
+          <p className="mt-2 max-w-lg text-charcoal-400">
+            We&apos;d love to hear from you. Visit our store, give us a call, or send us
+            a message — we&apos;re here to help.
+          </p>
+        </div>
+
+        <div className="mt-10 grid gap-10 lg:grid-cols-5 lg:gap-16">
+          {/* Contact Form */}
+          <div className="lg:col-span-3">
+            <div className="rounded-xl border border-charcoal-100 bg-white p-6 shadow-card sm:p-8">
+              <h2 className="text-xl font-semibold text-charcoal-700">
+                Send Us a Message
+              </h2>
+              <p className="mt-1 text-sm text-charcoal-400">
+                Fill out the form below and we&apos;ll get back to you within 24 hours.
+              </p>
+              <div className="mt-6">
+                <ContactForm />
+              </div>
+            </div>
+          </div>
+
+          {/* Contact Info */}
+          <div className="space-y-6 lg:col-span-2">
+            {/* Quick Contact */}
+            <div className="rounded-xl border border-charcoal-100 bg-white p-6 shadow-card">
+              <h3 className="text-lg font-semibold text-charcoal-700">
+                Quick Contact
+              </h3>
+              <div className="mt-4 space-y-4">
+                <a
+                  href="tel:+919876543210"
+                  className="flex items-center gap-3 text-sm text-charcoal-500 transition-colors hover:text-gold-600"
+                >
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gold-50 text-gold-600">
+                    <Phone className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-charcoal-700">Phone</p>
+                    <p>+91 98765 43210</p>
+                  </div>
+                </a>
+
+                <a
+                  href="https://wa.me/919876543210"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 text-sm text-charcoal-500 transition-colors hover:text-gold-600"
+                >
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-green-50 text-green-600">
+                    <MessageCircle className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-charcoal-700">WhatsApp</p>
+                    <p>Chat with us</p>
+                  </div>
+                </a>
+
+                <a
+                  href="mailto:info@abhishekjewelers.com"
+                  className="flex items-center gap-3 text-sm text-charcoal-500 transition-colors hover:text-gold-600"
+                >
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                    <Mail className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-charcoal-700">Email</p>
+                    <p>info@abhishekjewelers.com</p>
+                  </div>
+                </a>
+              </div>
+            </div>
+
+            {/* Store Location */}
+            <div className="rounded-xl border border-charcoal-100 bg-white p-6 shadow-card">
+              <h3 className="text-lg font-semibold text-charcoal-700">
+                Visit Our Store
+              </h3>
+              <div className="mt-4 space-y-3">
+                <div className="flex items-start gap-3 text-sm text-charcoal-500">
+                  <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-gold-600" />
+                  <span>
+                    Shop No. 12, Main Market,<br />
+                    City Center, State — 110001
+                  </span>
+                </div>
+                <div className="flex items-center gap-3 text-sm text-charcoal-500">
+                  <Clock className="h-4 w-4 shrink-0 text-gold-600" />
+                  <span>Mon — Sat: 10:00 AM – 8:00 PM</span>
+                </div>
+              </div>
+
+              {/* Map Embed */}
+              <div className="mt-4 overflow-hidden rounded-lg">
+                <iframe
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3502.2!2d77.2!3d28.6!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2z!5e0!3m2!1sen!2sin!4v1"
+                  width="100%"
+                  height="200"
+                  style={{ border: 0 }}
+                  allowFullScreen
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  title="Abhishek Jewelers Location"
+                  className="rounded-lg"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

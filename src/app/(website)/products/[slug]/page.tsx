@@ -1,0 +1,321 @@
+import { Metadata } from "next";
+import { notFound } from "next/navigation";
+import Link from "next/link";
+import { MessageCircle, Phone } from "lucide-react";
+import dbConnect from "@/lib/db";
+import Product from "@/models/Product";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
+import { Badge } from "@/components/ui/Badge";
+import { ProductGallery } from "@/components/website/ProductGallery";
+import { PriceBreakdown } from "@/components/website/PriceBreakdown";
+import { ProductCard } from "@/components/website/ProductCard";
+import { JsonLd } from "@/components/shared/JsonLd";
+import { formatCurrency, capitalize } from "@/lib/utils";
+import { productJsonLd, breadcrumbJsonLd, SITE_URL } from "@/lib/seo";
+
+export const revalidate = 60;
+
+export async function generateStaticParams() {
+  try {
+    await dbConnect();
+    const products = await Product.find({ isActive: true }).select("slug").lean();
+    return products.map((p) => ({ slug: p.slug }));
+  } catch {
+    return [];
+  }
+}
+
+interface ProductPageProps {
+  params: Promise<{ slug: string }>;
+}
+
+export async function generateMetadata({
+  params,
+}: ProductPageProps): Promise<Metadata> {
+  try {
+    const { slug } = await params;
+    await dbConnect();
+    const product = await Product.findOne({ slug, isActive: true })
+      .populate("category", "name slug")
+      .lean();
+
+    if (!product) return { title: "Product Not Found" };
+
+    const categoryName =
+      typeof product.category === "object" && product.category !== null
+        ? (product.category as unknown as { name: string }).name
+        : "";
+
+    const description =
+      product.metaDescription ||
+      `${product.name} — Premium ${categoryName} from Abhishek Jewelers. ${
+        product.metalComposition?.[0]?.variantName || "Gold"
+      } jewelry, BIS Hallmark certified. Price: ${formatCurrency(product.totalPrice)}`;
+
+    const url = `${SITE_URL}/products/${slug}`;
+
+    return {
+      title: `${product.name} — ${categoryName}`,
+      description,
+      alternates: { canonical: url },
+      openGraph: {
+        title: `${product.name} | Abhishek Jewelers`,
+        description,
+        url,
+        siteName: "Abhishek Jewelers",
+        type: "website",
+        images: product.thumbnailImage
+          ? [{ url: product.thumbnailImage, alt: product.name }]
+          : [],
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: `${product.name} | Abhishek Jewelers`,
+        description,
+        images: product.thumbnailImage ? [product.thumbnailImage] : [],
+      },
+    };
+  } catch {
+    return { title: "Product" };
+  }
+}
+
+async function getProductData(slug: string) {
+  try {
+    await dbConnect();
+
+    const product = await Product.findOne({ slug, isActive: true })
+      .populate("category", "name slug")
+      .lean();
+
+    if (!product) return null;
+
+    // Get related products from same category
+    const relatedProducts = await Product.find({
+      category: product.category,
+      isActive: true,
+      _id: { $ne: product._id },
+    })
+      .populate("category", "name slug")
+      .sort({ createdAt: -1 })
+      .limit(4)
+      .lean();
+
+    return {
+      product: JSON.parse(JSON.stringify(product)),
+      relatedProducts: JSON.parse(JSON.stringify(relatedProducts)),
+    };
+  } catch {
+    return null;
+  }
+}
+
+export default async function ProductPage({ params }: ProductPageProps) {
+  const { slug } = await params;
+  const data = await getProductData(slug);
+
+  if (!data) notFound();
+
+  const { product, relatedProducts } = data;
+  const category = product.category as { name: string; slug: string } | null;
+
+  const whatsappMessage = encodeURIComponent(
+    `Hi Abhishek Jewelers, I'm interested in ${product.name} (${product.productCode}). Could you provide more details?`
+  );
+
+  return (
+    <div className="py-8 md:py-12">
+      <JsonLd
+        data={productJsonLd({
+          name: product.name,
+          description: product.description || `${product.name} by Abhishek Jewelers`,
+          image: product.thumbnailImage || `${SITE_URL}/og-image.jpg`,
+          sku: product.productCode,
+          price: product.totalPrice,
+          availability: product.isOutOfStock ? "OutOfStock" : "InStock",
+          url: `${SITE_URL}/products/${product.slug}`,
+          category: category?.name,
+        })}
+      />
+      <JsonLd
+        data={breadcrumbJsonLd([
+          { name: "Home", url: SITE_URL },
+          ...(category
+            ? [
+                { name: "Categories", url: `${SITE_URL}/categories` },
+                { name: category.name, url: `${SITE_URL}/categories/${category.slug}` },
+              ]
+            : []),
+          { name: product.name, url: `${SITE_URL}/products/${product.slug}` },
+        ])}
+      />
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        {/* Breadcrumb */}
+        <Breadcrumb
+          homeHref="/"
+          items={[
+            { label: "Home", href: "/" },
+            ...(category
+              ? [
+                  { label: "Categories", href: "/categories" },
+                  {
+                    label: category.name,
+                    href: `/categories/${category.slug}`,
+                  },
+                ]
+              : []),
+            { label: product.name },
+          ]}
+        />
+
+        {/* Product Section */}
+        <div className="mt-6 grid gap-8 lg:grid-cols-2 lg:gap-12">
+          {/* Gallery */}
+          <ProductGallery
+            images={product.images || [product.thumbnailImage]}
+            productName={product.name}
+          />
+
+          {/* Details */}
+          <div className="flex flex-col">
+            {/* Badges */}
+            <div className="flex flex-wrap gap-2">
+              {product.isNewArrival && (
+                <Badge variant="rose">New Arrival</Badge>
+              )}
+              {product.isFeatured && (
+                <Badge variant="gold">Featured</Badge>
+              )}
+              {product.isOutOfStock && (
+                <Badge variant="error">Out of Stock</Badge>
+              )}
+            </div>
+
+            {/* Category & Code */}
+            {category && (
+              <Link
+                href={`/categories/${category.slug}`}
+                className="mt-3 text-xs font-medium uppercase tracking-wider text-gold-600 hover:text-gold-700"
+              >
+                {category.name}
+              </Link>
+            )}
+
+            {/* Name */}
+            <h1 className="mt-2 font-heading text-2xl font-bold text-charcoal-700 sm:text-3xl lg:text-4xl">
+              {product.name}
+            </h1>
+
+            {/* Product Code */}
+            <p className="mt-1 font-mono text-xs text-charcoal-400">
+              {product.productCode}
+            </p>
+
+            {/* Price */}
+            <div className="mt-4">
+              <PriceBreakdown product={product} />
+            </div>
+
+            {/* Details Grid */}
+            <div className="mt-6 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
+              {product.gender && (
+                <div className="rounded-lg bg-charcoal-50 p-3">
+                  <p className="text-xs text-charcoal-400">Gender</p>
+                  <p className="mt-0.5 font-medium text-charcoal-700">
+                    {capitalize(product.gender)}
+                  </p>
+                </div>
+              )}
+              {product.grossWeight > 0 && (
+                <div className="rounded-lg bg-charcoal-50 p-3">
+                  <p className="text-xs text-charcoal-400">Gross Weight</p>
+                  <p className="mt-0.5 font-medium text-charcoal-700">
+                    {product.grossWeight}g
+                  </p>
+                </div>
+              )}
+              {product.netWeight > 0 && (
+                <div className="rounded-lg bg-charcoal-50 p-3">
+                  <p className="text-xs text-charcoal-400">Net Weight</p>
+                  <p className="mt-0.5 font-medium text-charcoal-700">
+                    {product.netWeight}g
+                  </p>
+                </div>
+              )}
+              {product.size && (
+                <div className="rounded-lg bg-charcoal-50 p-3">
+                  <p className="text-xs text-charcoal-400">Size</p>
+                  <p className="mt-0.5 font-medium text-charcoal-700">
+                    {product.size}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Description */}
+            {product.description && (
+              <div className="mt-6">
+                <h3 className="text-sm font-semibold text-charcoal-600">
+                  Description
+                </h3>
+                <p className="mt-2 max-w-prose text-sm leading-relaxed text-charcoal-400">
+                  {product.description}
+                </p>
+              </div>
+            )}
+
+            {/* CTAs */}
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <a
+                href={`https://wa.me/919876543210?text=${whatsappMessage}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-gold-500 px-6 py-3.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-gold-600 hover:shadow-gold active:scale-[0.97]"
+              >
+                <MessageCircle className="h-4 w-4" />
+                Enquire on WhatsApp
+              </a>
+              <a
+                href="tel:+919876543210"
+                className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border border-charcoal-200 px-6 py-3.5 text-sm font-medium text-charcoal-600 transition-colors hover:bg-charcoal-50"
+              >
+                <Phone className="h-4 w-4" />
+                Call Us
+              </a>
+            </div>
+          </div>
+        </div>
+
+        {/* Related Products */}
+        {relatedProducts.length > 0 && (
+          <section className="mt-16 border-t border-charcoal-100 pt-12">
+            <h2 className="mb-6 font-heading text-2xl font-bold text-charcoal-700">
+              You May Also Like
+            </h2>
+            <div className="grid grid-cols-2 gap-4 sm:gap-6 md:grid-cols-4">
+              {relatedProducts.map(
+                (rp: {
+                  _id: string;
+                  name: string;
+                  slug: string;
+                  productCode: string;
+                  thumbnailImage: string;
+                  totalPrice: number;
+                  category: { name: string; slug: string };
+                  gender: string;
+                  isNewArrival: boolean;
+                  isOutOfStock: boolean;
+                  isFeatured: boolean;
+                  metalComposition: {
+                    variantName: string;
+                    weightInGrams: number;
+                  }[];
+                }) => <ProductCard key={rp._id} product={rp} />
+              )}
+            </div>
+          </section>
+        )}
+      </div>
+    </div>
+  );
+}

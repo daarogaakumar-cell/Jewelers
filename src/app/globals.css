@@ -1,0 +1,290 @@
+@import "tailwindcss";
+
+/* ─── Design Tokens (CSS Custom Properties) ─── */
+:root {
+  /* Primary — Warm Gold */
+  --gold-50: #FFF9E6;
+  --gold-100: #FFF0BF;
+  --gold-200: #FFE699;
+  --gold-300: #FFD966;
+  --gold-400: #FFCC33;
+  --gold-500: #D4A017;
+  --gold-600: #B8860B;
+  --gold-700: #996515;
+  --gold-800: #7A4F0F;
+  --gold-900: #5C3A0A;
+
+  /* Neutral — Warm Charcoal */
+  --charcoal-50: #F8F7F6;
+  --charcoal-100: #EDEBE8;
+  --charcoal-200: #D4D0CB;
+  --charcoal-300: #A9A49C;
+  --charcoal-400: #7D776D;
+  --charcoal-500: #524C42;
+  --charcoal-600: #3D382F;
+  --charcoal-700: #2A2621;
+  --charcoal-800: #1A1714;
+  --charcoal-900: #0D0B09;
+
+  /* Accent — Rose / Burgundy */
+  --rose-400: #D87A8E;
+  --rose-500: #C45B6E;
+  --rose-600: #A3324A;
+
+  /* Semantic */
+  --success: #2D8B4E;
+  --warning: #E6A817;
+  --error: #CC3333;
+  --info: #3B82F6;
+
+  /* Shadows */
+  --shadow-card: 0 1px 3px rgba(13, 11, 9, 0.06), 0 1px 2px rgba(13, 11, 9, 0.04);
+  --shadow-card-hover: 0 10px 25px rgba(13, 11, 9, 0.08), 0 4px 10px rgba(13, 11, 9, 0.04);
+  --shadow-modal: 0 25px 50px rgba(13, 11, 9, 0.15);
+  --shadow-gold: 0 0 20px rgba(212, 160, 23, 0.15);
+
+  /* Transitions */
+  --transition-default: 200ms ease-in-out;
+  --transition-fast: 150ms ease;
+  --transition-slow: 300ms ease-in-out;
+
+  /* Page colors */
+  --background: #F8F7F6;
+  --foreground: #524C42;
+}
+
+/* ─── Tailwind v4 Theme Extension ─── */
+@theme inline {
+  /* Colors */
+  --color-gold-50: var(--gold-50);
+  --color-gold-100: var(--gold-100);
+  --color-gold-200: var(--gold-200);
+  --color-gold-300: var(--gold-300);
+  --color-gold-400: var(--gold-400);
+  --color-gold-500: var(--gold-500);
+  --color-gold-600: var(--gold-600);
+  --color-gold-700: var(--gold-700);
+  --color-gold-800: var(--gold-800);
+  --color-gold-900: var(--gold-900);
+
+  --color-charcoal-50: var(--charcoal-50);
+  --color-charcoal-100: var(--charcoal-100);
+  --color-charcoal-200: var(--charcoal-200);
+  --color-charcoal-300: var(--charcoal-300);
+  --color-charcoal-400: var(--charcoal-400);
+  --color-charcoal-500: var(--charcoal-500);
+  --color-charcoal-600: var(--charcoal-600);
+  --color-charcoal-700: var(--charcoal-700);
+  --color-charcoal-800: var(--charcoal-800);
+  --color-charcoal-900: var(--charcoal-900);
+
+  --color-rose-400: var(--rose-400);
+  --color-rose-500: var(--rose-500);
+  --color-rose-600: var(--rose-600);
+
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
+  --color-info: var(--info);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  /* Fonts */
+  --font-heading: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  --font-body: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+
+  /* Shadows */
+  --shadow-card: 0 1px 3px rgba(13, 11, 9, 0.06), 0 1px 2px rgba(13, 11, 9, 0.04);
+  --shadow-card-hover: 0 10px 25px rgba(13, 11, 9, 0.08), 0 4px 10px rgba(13, 11, 9, 0.04);
+  --shadow-modal: 0 25px 50px rgba(13, 11, 9, 0.15);
+  --shadow-gold: 0 0 20px rgba(212, 160, 23, 0.15);
+}
+
+/* ─── Base Styles ─── */
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-body);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── Typography ─── */
+h1, h2 {
+  font-family: var(--font-heading);
+  line-height: 1.2;
+  color: var(--charcoal-600);
+}
+
+h3, h4, h5, h6 {
+  font-family: var(--font-body);
+  line-height: 1.3;
+  color: var(--charcoal-600);
+  font-weight: 600;
+}
+
+/* ─── Focus Styles (Accessibility) ─── */
+*:focus-visible {
+  outline: 2px solid var(--gold-500);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ─── Selection ─── */
+::selection {
+  background-color: var(--gold-200);
+  color: var(--charcoal-800);
+}
+
+/* ─── Scrollbar (Webkit) ─── */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--charcoal-50);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--charcoal-200);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--charcoal-300);
+}
+
+/* ─── Skeleton Animation ─── */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--charcoal-100) 25%,
+    var(--charcoal-50) 50%,
+    var(--charcoal-100) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* ─── Ticker Animation ─── */
+@keyframes ticker {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-ticker {
+  animation: ticker 30s linear infinite;
+}
+
+.animate-ticker:hover {
+  animation-play-state: paused;
+}
+
+/* ─── Hero Section Animations ─── */
+
+/* Floating gold particles — pure CSS, GPU-composited (transform + opacity only) */
+@keyframes heroParticle {
+  0% {
+    transform: translateY(0) translateX(0) scale(1);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateY(-85vh) translateX(var(--drift, 12px)) scale(0.4);
+    opacity: 0;
+  }
+}
+
+.hero-particle {
+  animation: heroParticle linear infinite;
+  will-change: transform, opacity;
+}
+
+/* Rotating rings on the medallion */
+@keyframes heroSpinSlow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes heroSpinReverse {
+  from { transform: rotate(360deg); }
+  to   { transform: rotate(0deg); }
+}
+
+@keyframes heroSpinFast {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.hero-spin-slow {
+  animation: heroSpinSlow 32s linear infinite;
+  will-change: transform;
+}
+
+.hero-spin-reverse {
+  animation: heroSpinReverse 22s linear infinite;
+  will-change: transform;
+}
+
+.hero-spin-fast {
+  animation: heroSpinFast 12s linear infinite;
+  will-change: transform;
+}
+
+/* Rotating conic arc highlight on the medallion */
+@keyframes heroArcShine {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.hero-arc-shine {
+  animation: heroArcShine 6s linear infinite;
+  will-change: transform;
+}
+
+/* Animated gradient shimmer on the gold headline text */
+@keyframes heroTextShimmer {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.hero-shimmer-text {
+  background-size: 250% 250%;
+  animation: heroTextShimmer 5s ease infinite;
+}
+
+/* Scrolling luxury marquee strip */
+@keyframes heroMarquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+.hero-marquee {
+  animation: heroMarquee 40s linear infinite;
+  will-change: transform;
+}
+
+/* ─── Reduced Motion ─── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
