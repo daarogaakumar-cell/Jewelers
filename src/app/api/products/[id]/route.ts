@@ -67,8 +67,8 @@ export async function PUT(
       }
 
       const prices = calculateProductPrice({
-        metalComposition: (validatedData.metalComposition ?? existing.metalComposition) as Parameters<typeof calculateProductPrice>[0]["metalComposition"],
-        gemstoneComposition: (validatedData.gemstoneComposition ?? existing.gemstoneComposition) as Parameters<typeof calculateProductPrice>[0]["gemstoneComposition"],
+        metalComposition: (validatedData.metalComposition ?? existing.metalComposition) as unknown as Parameters<typeof calculateProductPrice>[0]["metalComposition"],
+        gemstoneComposition: (validatedData.gemstoneComposition ?? existing.gemstoneComposition) as unknown as Parameters<typeof calculateProductPrice>[0]["gemstoneComposition"],
         makingCharges: validatedData.makingCharges ?? existing.makingCharges,
         wastageCharges: validatedData.wastageCharges ?? existing.wastageCharges,
         gstPercentage: validatedData.gstPercentage ?? existing.gstPercentage,

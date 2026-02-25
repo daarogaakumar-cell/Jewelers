@@ -107,8 +107,8 @@ export async function POST(request: NextRequest) {
 
     // Always recalculate prices server-side — never trust client-sent values
     const prices = calculateProductPrice({
-      metalComposition: (validatedData.metalComposition ?? []) as Parameters<typeof calculateProductPrice>[0]["metalComposition"],
-      gemstoneComposition: (validatedData.gemstoneComposition ?? []) as Parameters<typeof calculateProductPrice>[0]["gemstoneComposition"],
+      metalComposition: (validatedData.metalComposition ?? []) as unknown as Parameters<typeof calculateProductPrice>[0]["metalComposition"],
+      gemstoneComposition: (validatedData.gemstoneComposition ?? []) as unknown as Parameters<typeof calculateProductPrice>[0]["gemstoneComposition"],
       makingCharges: validatedData.makingCharges ?? { type: "fixed", value: 0 },
       wastageCharges: validatedData.wastageCharges ?? { type: "fixed", value: 0 },
       gstPercentage: validatedData.gstPercentage ?? 3,
