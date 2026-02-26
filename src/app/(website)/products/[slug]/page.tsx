@@ -14,6 +14,7 @@ import { formatCurrency, capitalize } from "@/lib/utils";
 import { productJsonLd, breadcrumbJsonLd, SITE_URL } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
 
 interface ProductPageProps {
   params: Promise<{ slug: string }>;
@@ -70,34 +71,39 @@ export async function generateMetadata({
   }
 }
 
-async function getProductData(slug: string) {
-  try {
-    await dbConnect();
+async function getProductData(slug: string, retries = 2) {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      await dbConnect();
 
-    const product = await Product.findOne({ slug, isActive: true })
-      .populate("category", "name slug")
-      .lean();
+      const product = await Product.findOne({ slug, isActive: true })
+        .populate("category", "name slug")
+        .lean();
 
-    if (!product) return null;
+      if (!product) return null;
 
-    // Get related products from same category
-    const relatedProducts = await Product.find({
-      category: product.category,
-      isActive: true,
-      _id: { $ne: product._id },
-    })
-      .populate("category", "name slug")
-      .sort({ createdAt: -1 })
-      .limit(4)
-      .lean();
+      // Get related products from same category
+      const relatedProducts = await Product.find({
+        category: product.category,
+        isActive: true,
+        _id: { $ne: product._id },
+      })
+        .populate("category", "name slug")
+        .sort({ createdAt: -1 })
+        .limit(4)
+        .lean();
 
-    return {
-      product: JSON.parse(JSON.stringify(product)),
-      relatedProducts: JSON.parse(JSON.stringify(relatedProducts)),
-    };
-  } catch {
-    return null;
+      return {
+        product: JSON.parse(JSON.stringify(product)),
+        relatedProducts: JSON.parse(JSON.stringify(relatedProducts)),
+      };
+    } catch (err) {
+      console.error(`getProductData attempt ${attempt + 1} failed:`, err);
+      if (attempt === retries) return null;
+      await new Promise((r) => setTimeout(r, 500));
+    }
   }
+  return null;
 }
 
 export default async function ProductPage({ params }: ProductPageProps) {

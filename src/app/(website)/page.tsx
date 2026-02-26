@@ -11,6 +11,7 @@ import { JsonLd } from "@/components/shared/JsonLd";
 import { createMetadata, organizationJsonLd, localBusinessJsonLd } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
 
 export const metadata = createMetadata({
   title: "Premium Gold & Diamond Jewelry",
@@ -48,30 +49,40 @@ function SectionSkeleton() {
 
 async function CategoriesSection() {
   let categories: unknown[] = [];
-  try {
-    await dbConnect();
-    categories = await Category.find({ isActive: true })
-      .sort({ order: 1 })
-      .populate("productCount")
-      .limit(8)
-      .lean();
-  } catch {
-    return null;
+  for (let attempt = 0; attempt <= 2; attempt++) {
+    try {
+      await dbConnect();
+      categories = await Category.find({ isActive: true })
+        .sort({ order: 1 })
+        .populate("productCount")
+        .limit(8)
+        .lean();
+      break;
+    } catch (err) {
+      console.error(`CategoriesSection attempt ${attempt + 1} failed:`, err);
+      if (attempt === 2) return null;
+      await new Promise((r) => setTimeout(r, 500));
+    }
   }
   return <CategoryGrid categories={JSON.parse(JSON.stringify(categories))} />;
 }
 
 async function NewArrivalsSection() {
   let products: unknown[] = [];
-  try {
-    await dbConnect();
-    products = await Product.find({ isActive: true, isNewArrival: true })
-      .populate("category", "name slug")
-      .sort({ createdAt: -1 })
-      .limit(8)
-      .lean();
-  } catch {
-    return null;
+  for (let attempt = 0; attempt <= 2; attempt++) {
+    try {
+      await dbConnect();
+      products = await Product.find({ isActive: true, isNewArrival: true })
+        .populate("category", "name slug")
+        .sort({ createdAt: -1 })
+        .limit(8)
+        .lean();
+      break;
+    } catch (err) {
+      console.error(`NewArrivalsSection attempt ${attempt + 1} failed:`, err);
+      if (attempt === 2) return null;
+      await new Promise((r) => setTimeout(r, 500));
+    }
   }
   return (
     <ProductGrid
@@ -89,15 +100,20 @@ async function NewArrivalsSection() {
 
 async function FeaturedSection() {
   let products: unknown[] = [];
-  try {
-    await dbConnect();
-    products = await Product.find({ isActive: true, isFeatured: true })
-      .populate("category", "name slug")
-      .sort({ createdAt: -1 })
-      .limit(8)
-      .lean();
-  } catch {
-    return null;
+  for (let attempt = 0; attempt <= 2; attempt++) {
+    try {
+      await dbConnect();
+      products = await Product.find({ isActive: true, isFeatured: true })
+        .populate("category", "name slug")
+        .sort({ createdAt: -1 })
+        .limit(8)
+        .lean();
+      break;
+    } catch (err) {
+      console.error(`FeaturedSection attempt ${attempt + 1} failed:`, err);
+      if (attempt === 2) return null;
+      await new Promise((r) => setTimeout(r, 500));
+    }
   }
   return (
     <ProductGrid

@@ -8,6 +8,7 @@ import { JsonLd } from "@/components/shared/JsonLd";
 import { createMetadata, breadcrumbJsonLd, SITE_URL } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
 
 export const metadata = createMetadata({
   title: "All Categories",
@@ -17,17 +18,22 @@ export const metadata = createMetadata({
   keywords: ["jewelry categories", "gold rings", "necklaces", "bangles", "earrings", "diamond jewelry"],
 });
 
-async function getCategories() {
-  try {
-    await dbConnect();
-    const categories = await Category.find({ isActive: true })
-      .sort({ order: 1 })
-      .populate("productCount")
-      .lean();
-    return JSON.parse(JSON.stringify(categories));
-  } catch {
-    return [];
+async function getCategories(retries = 2) {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      await dbConnect();
+      const categories = await Category.find({ isActive: true })
+        .sort({ order: 1 })
+        .populate("productCount")
+        .lean();
+      return JSON.parse(JSON.stringify(categories));
+    } catch (err) {
+      console.error(`getCategories attempt ${attempt + 1} failed:`, err);
+      if (attempt === retries) return [];
+      await new Promise((r) => setTimeout(r, 500));
+    }
   }
+  return [];
 }
 
 export default async function CategoriesPage() {

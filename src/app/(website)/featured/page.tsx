@@ -5,6 +5,22 @@ import { ProductCard } from "@/components/website/ProductCard";
 import { createMetadata } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
+
+interface ProductCardData {
+  _id: string;
+  name: string;
+  slug: string;
+  productCode: string;
+  thumbnailImage: string;
+  totalPrice: number;
+  category: { name: string; slug: string };
+  gender: string;
+  isNewArrival: boolean;
+  isOutOfStock: boolean;
+  isFeatured: boolean;
+  metalComposition: { variantName: string; weightInGrams: number }[];
+}
 
 export const metadata = createMetadata({
   title: "Featured Collection",
@@ -14,17 +30,22 @@ export const metadata = createMetadata({
   keywords: ["featured jewelry", "best jewelry", "premium gold jewelry", "top diamond pieces"],
 });
 
-async function getFeaturedProducts() {
-  try {
-    await dbConnect();
-    const products = await Product.find({ isActive: true, isFeatured: true })
-      .populate("category", "name slug")
-      .sort({ createdAt: -1 })
-      .lean();
-    return JSON.parse(JSON.stringify(products));
-  } catch {
-    return [];
+async function getFeaturedProducts(retries = 2): Promise<ProductCardData[]> {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      await dbConnect();
+      const products = await Product.find({ isActive: true, isFeatured: true })
+        .populate("category", "name slug")
+        .sort({ createdAt: -1 })
+        .lean();
+      return JSON.parse(JSON.stringify(products));
+    } catch (err) {
+      console.error(`getFeaturedProducts attempt ${attempt + 1} failed:`, err);
+      if (attempt === retries) return [];
+      await new Promise((r) => setTimeout(r, 500));
+    }
   }
+  return [];
 }
 
 export default async function FeaturedPage() {
@@ -50,24 +71,9 @@ export default async function FeaturedPage() {
 
         {products.length > 0 ? (
           <div className="mt-8 grid grid-cols-2 gap-4 sm:gap-6 md:grid-cols-3 lg:grid-cols-4">
-            {products.map(
-              (product: {
-                _id: string;
-                name: string;
-                slug: string;
-                productCode: string;
-                thumbnailImage: string;
-                totalPrice: number;
-                category: { name: string; slug: string };
-                gender: string;
-                isNewArrival: boolean;
-                isOutOfStock: boolean;
-                isFeatured: boolean;
-                metalComposition: {
-                  variantName: string;
-                  weightInGrams: number;
-                }[];
-              }) => <ProductCard key={product._id} product={product} />
+            {products.map((product) => (
+              <ProductCard key={product._id} product={product} />
+            )
             )}
           </div>
         ) : (

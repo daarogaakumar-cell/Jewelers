@@ -32,14 +32,27 @@ if (!global.mongooseCache) {
 }
 
 async function dbConnect(): Promise<typeof mongoose> {
+  // If we already have a live connection, verify it's still responsive
   if (cached.conn) {
-    return cached.conn;
+    const readyState = cached.conn.connection.readyState;
+    // 1 = connected, 2 = connecting
+    if (readyState === 1) {
+      return cached.conn;
+    }
+    // Connection is broken — clear the cache and reconnect
+    if (readyState !== 2) {
+      cached.conn = null;
+      cached.promise = null;
+    }
   }
 
   if (!cached.promise) {
     const opts = {
       bufferCommands: false,
       maxPoolSize: 10,
+      serverSelectionTimeoutMS: 10000,
+      connectTimeoutMS: 10000,
+      socketTimeoutMS: 20000,
     };
 
     cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {

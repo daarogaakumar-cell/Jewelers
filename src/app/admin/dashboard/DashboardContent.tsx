@@ -114,38 +114,61 @@ export function DashboardContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const fetchDashboardData = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      const [productsRes, categoriesRes, metalsRes, gemstonesRes] =
-        await Promise.all([
-          fetch("/api/products?limit=5&sort=-createdAt"),
-          fetch("/api/categories"),
-          fetch("/api/metals"),
-          fetch("/api/gemstones"),
-        ]);
+  const fetchDashboardData = useCallback(async (retries = 2) => {
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        setIsLoading(true);
+        setError("");
 
-      const [productsData, categoriesData, metalsData, gemstonesData] =
-        await Promise.all([
-          productsRes.json(),
-          categoriesRes.json(),
-          metalsRes.json(),
-          gemstonesRes.json(),
-        ]);
+        // Add cache-busting timestamp to prevent any browser/CDN caching
+        const ts = Date.now();
+        const [productsRes, categoriesRes, metalsRes, gemstonesRes] =
+          await Promise.all([
+            fetch(`/api/products?limit=5&sort=-createdAt&_t=${ts}`, { cache: "no-store" }),
+            fetch(`/api/categories?_t=${ts}`, { cache: "no-store" }),
+            fetch(`/api/metals?_t=${ts}`, { cache: "no-store" }),
+            fetch(`/api/gemstones?_t=${ts}`, { cache: "no-store" }),
+          ]);
 
-      setStats({
-        totalProducts: productsData.pagination?.total || productsData.data?.length || 0,
-        totalCategories: categoriesData.data?.length || 0,
-        totalMetals: metalsData.data?.length || 0,
-        totalGemstones: gemstonesData.data?.length || 0,
-        recentProducts: productsData.data || [],
-        metalPrices: metalsData.data || [],
-        gemstonePrices: gemstonesData.data || [],
-      });
-    } catch {
-      setError("Failed to load dashboard data");
-    } finally {
-      setIsLoading(false);
+        // Check if any response is not OK
+        if (!productsRes.ok || !categoriesRes.ok || !metalsRes.ok || !gemstonesRes.ok) {
+          throw new Error("One or more API calls failed");
+        }
+
+        const [productsData, categoriesData, metalsData, gemstonesData] =
+          await Promise.all([
+            productsRes.json(),
+            categoriesRes.json(),
+            metalsRes.json(),
+            gemstonesRes.json(),
+          ]);
+
+        // Verify data was actually returned (not empty due to DB connection issues)
+        if (!productsData.success || !categoriesData.success || !metalsData.success || !gemstonesData.success) {
+          throw new Error("API returned unsuccessful response");
+        }
+
+        setStats({
+          totalProducts: productsData.pagination?.total || productsData.data?.length || 0,
+          totalCategories: categoriesData.data?.length || 0,
+          totalMetals: metalsData.data?.length || 0,
+          totalGemstones: gemstonesData.data?.length || 0,
+          recentProducts: productsData.data || [],
+          metalPrices: metalsData.data || [],
+          gemstonePrices: gemstonesData.data || [],
+        });
+        setIsLoading(false);
+        return; // Success — exit the retry loop
+      } catch (err) {
+        console.error(`Dashboard fetch attempt ${attempt + 1} failed:`, err);
+        if (attempt === retries) {
+          setError("Failed to load dashboard data");
+          setIsLoading(false);
+        } else {
+          // Short delay before retry
+          await new Promise((r) => setTimeout(r, 800));
+        }
+      }
     }
   }, []);
 

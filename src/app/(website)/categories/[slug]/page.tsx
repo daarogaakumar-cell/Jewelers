@@ -10,6 +10,7 @@ import { JsonLd } from "@/components/shared/JsonLd";
 import { breadcrumbJsonLd, SITE_URL } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
 
 interface CategoryPageProps {
   params: Promise<{ slug: string }>;
@@ -72,13 +73,15 @@ async function getCategoryData(
     page?: string;
     minPrice?: string;
     maxPrice?: string;
-  }
+  },
+  retries = 2
 ) {
-  try {
-    await dbConnect();
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      await dbConnect();
 
-    const category = await Category.findOne({ slug, isActive: true }).lean();
-    if (!category) return null;
+      const category = await Category.findOne({ slug, isActive: true }).lean();
+      if (!category) return null;
 
   const filter: Record<string, unknown> = {
     category: category._id,
@@ -123,9 +126,13 @@ async function getCategoryData(
       totalPages: Math.ceil(total / limit),
     },
   };
-  } catch {
-    return null;
+    } catch (err) {
+      console.error(`getCategoryData attempt ${attempt + 1} failed:`, err);
+      if (attempt === retries) return null;
+      await new Promise((r) => setTimeout(r, 500));
+    }
   }
+  return null;
 }
 
 export default async function CategoryPage({
