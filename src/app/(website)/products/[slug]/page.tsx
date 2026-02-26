@@ -13,17 +13,7 @@ import { JsonLd } from "@/components/shared/JsonLd";
 import { formatCurrency, capitalize } from "@/lib/utils";
 import { productJsonLd, breadcrumbJsonLd, SITE_URL } from "@/lib/seo";
 
-export const revalidate = 60;
-
-export async function generateStaticParams() {
-  try {
-    await dbConnect();
-    const products = await Product.find({ isActive: true }).select("slug").lean();
-    return products.map((p) => ({ slug: p.slug }));
-  } catch {
-    return [];
-  }
-}
+export const dynamic = "force-dynamic";
 
 interface ProductPageProps {
   params: Promise<{ slug: string }>;

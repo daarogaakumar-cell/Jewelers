@@ -108,6 +108,12 @@ export default function BillsListPage() {
   const handleDelete = async () => {
     if (!deleteTarget) return;
     setIsDeleting(true);
+
+    // Optimistic removal
+    const previousBills = [...bills];
+    setBills((prev) => prev.filter((b) => b._id !== deleteTarget._id));
+    setTotal((prev) => Math.max(0, prev - 1));
+
     try {
       const res = await fetch(`/api/bills/${deleteTarget._id}`, {
         method: "DELETE",
@@ -115,11 +121,16 @@ export default function BillsListPage() {
       const data = await res.json();
       if (data.success) {
         toast.success("Bill deleted");
-        fetchBills();
       } else {
+        // Revert on failure
+        setBills(previousBills);
+        setTotal((prev) => prev + 1);
         toast.error(data.error || "Failed to delete");
       }
     } catch {
+      // Revert on error
+      setBills(previousBills);
+      setTotal((prev) => prev + 1);
       toast.error("Failed to delete bill");
     } finally {
       setIsDeleting(false);

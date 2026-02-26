@@ -19,6 +19,7 @@ export default function EditProductPage({ params }: Props) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
     async function load() {
       try {
         const res = await fetch(`/api/products/${id}`);

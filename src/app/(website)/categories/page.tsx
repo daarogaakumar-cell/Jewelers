@@ -7,7 +7,7 @@ import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import { JsonLd } from "@/components/shared/JsonLd";
 import { createMetadata, breadcrumbJsonLd, SITE_URL } from "@/lib/seo";
 
-export const revalidate = 300;
+export const dynamic = "force-dynamic";
 
 export const metadata = createMetadata({
   title: "All Categories",

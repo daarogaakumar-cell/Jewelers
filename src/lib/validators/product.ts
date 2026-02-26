@@ -61,7 +61,7 @@ export const productCreateSchema = z.object({
   gstPercentage: z.number().min(0).max(100).default(3),
   otherCharges: z.array(otherChargeSchema).optional().default([]),
 
-  images: z.array(z.string().url()).max(8).optional().default([]),
+  images: z.array(z.string().url()).min(1, "At least one product image is required").max(8),
   thumbnailImage: z.string().optional().default(""),
 
   isNewArrival: z.boolean().optional().default(false),

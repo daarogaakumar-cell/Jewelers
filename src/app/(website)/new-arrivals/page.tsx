@@ -4,7 +4,7 @@ import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import { ProductCard } from "@/components/website/ProductCard";
 import { createMetadata } from "@/lib/seo";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 export const metadata = createMetadata({
   title: "New Arrivals",

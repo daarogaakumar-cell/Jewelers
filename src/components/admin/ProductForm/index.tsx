@@ -78,9 +78,18 @@ export function ProductForm({ mode, initialData, productId }: ProductFormProps) 
     setFormData((prev) => ({ ...prev, images: data }));
   }, []);
 
-  const goNext = () => setCurrentStep((s) => Math.min(s + 1, STEPS.length - 1));
-  const goBack = () => setCurrentStep((s) => Math.max(s - 1, 0));
-  const goTo = (step: number) => setCurrentStep(step);
+  const goNext = () => {
+    setCurrentStep((s) => Math.min(s + 1, STEPS.length - 1));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+  const goBack = () => {
+    setCurrentStep((s) => Math.max(s - 1, 0));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+  const goTo = (step: number) => {
+    setCurrentStep(step);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const calculatePrices = () => {
     return calculateProductPrice({
@@ -110,6 +119,13 @@ export function ProductForm({ mode, initialData, productId }: ProductFormProps) 
   };
 
   const handleSubmit = async () => {
+    // Client-side guard: require at least one image
+    if (formData.images.images.length === 0) {
+      toast.error("Please upload at least one product image");
+      setCurrentStep(3);
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const prices = calculatePrices();

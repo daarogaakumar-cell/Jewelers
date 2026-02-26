@@ -114,6 +114,12 @@ export default function ProductsListPage() {
   const handleDelete = async () => {
     if (!deleteTarget) return;
     setIsDeleting(true);
+
+    // Optimistic removal: immediately remove the item from UI
+    const previousProducts = [...products];
+    setProducts((prev) => prev.filter((p) => p._id !== deleteTarget._id));
+    setTotal((prev) => Math.max(0, prev - 1));
+
     try {
       const res = await fetch(`/api/products/${deleteTarget._id}`, {
         method: "DELETE",
@@ -121,11 +127,16 @@ export default function ProductsListPage() {
       const data = await res.json();
       if (data.success) {
         toast.success("Product deleted successfully");
-        fetchProducts();
       } else {
+        // Revert on failure
+        setProducts(previousProducts);
+        setTotal((prev) => prev + 1);
         toast.error(data.error || "Failed to delete product");
       }
     } catch {
+      // Revert on error
+      setProducts(previousProducts);
+      setTotal((prev) => prev + 1);
       toast.error("Failed to delete product");
     } finally {
       setIsDeleting(false);
@@ -134,20 +145,41 @@ export default function ProductsListPage() {
   };
 
   const toggleStock = async (product: ProductItem) => {
+    // Optimistic update: toggle immediately in UI
+    const newStockStatus = !product.isOutOfStock;
+    setProducts((prev) =>
+      prev.map((p) =>
+        p._id === product._id ? { ...p, isOutOfStock: newStockStatus } : p
+      )
+    );
+
     try {
       const res = await fetch(`/api/products/${product._id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isOutOfStock: !product.isOutOfStock }),
+        body: JSON.stringify({ isOutOfStock: newStockStatus }),
       });
       const data = await res.json();
       if (data.success) {
         toast.success(
           product.isOutOfStock ? "Marked as in stock" : "Marked as out of stock"
         );
-        fetchProducts();
+      } else {
+        // Revert on failure
+        setProducts((prev) =>
+          prev.map((p) =>
+            p._id === product._id ? { ...p, isOutOfStock: product.isOutOfStock } : p
+          )
+        );
+        toast.error("Failed to update stock status");
       }
     } catch {
+      // Revert on error
+      setProducts((prev) =>
+        prev.map((p) =>
+          p._id === product._id ? { ...p, isOutOfStock: product.isOutOfStock } : p
+        )
+      );
       toast.error("Failed to update stock status");
     }
   };

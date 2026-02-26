@@ -113,9 +113,19 @@ export function StepImages({ data, onChange, onNext, onBack }: StepImagesProps) 
         <Button type="button" variant="ghost" onClick={onBack}>
           Back
         </Button>
-        <Button type="button" variant="primary" onClick={onNext}>
-          Review Product
-        </Button>
+        <div className="flex items-center gap-3">
+          {data.images.length === 0 && (
+            <p className="text-sm text-error">Upload at least one image</p>
+          )}
+          <Button
+            type="button"
+            variant="primary"
+            onClick={onNext}
+            disabled={data.images.length === 0}
+          >
+            Review Product
+          </Button>
+        </div>
       </div>
     </div>
   );

@@ -9,17 +9,7 @@ import { CategoryFilters } from "./CategoryFilters";
 import { JsonLd } from "@/components/shared/JsonLd";
 import { breadcrumbJsonLd, SITE_URL } from "@/lib/seo";
 
-export const revalidate = 60;
-
-export async function generateStaticParams() {
-  try {
-    await dbConnect();
-    const categories = await Category.find({ isActive: true }).select("slug").lean();
-    return categories.map((cat) => ({ slug: cat.slug }));
-  } catch {
-    return [];
-  }
-}
+export const dynamic = "force-dynamic";
 
 interface CategoryPageProps {
   params: Promise<{ slug: string }>;

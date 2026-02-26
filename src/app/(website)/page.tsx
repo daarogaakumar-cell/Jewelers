@@ -10,7 +10,7 @@ import { TrustBadges } from "@/components/website/TrustBadges";
 import { JsonLd } from "@/components/shared/JsonLd";
 import { createMetadata, organizationJsonLd, localBusinessJsonLd } from "@/lib/seo";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 export const metadata = createMetadata({
   title: "Premium Gold & Diamond Jewelry",
@@ -47,67 +47,70 @@ function SectionSkeleton() {
 }
 
 async function CategoriesSection() {
+  let categories: unknown[] = [];
   try {
     await dbConnect();
-    const categories = await Category.find({ isActive: true })
+    categories = await Category.find({ isActive: true })
       .sort({ order: 1 })
       .populate("productCount")
       .limit(8)
       .lean();
-    return <CategoryGrid categories={JSON.parse(JSON.stringify(categories))} />;
   } catch {
     return null;
   }
+  return <CategoryGrid categories={JSON.parse(JSON.stringify(categories))} />;
 }
 
 async function NewArrivalsSection() {
+  let products: unknown[] = [];
   try {
     await dbConnect();
-    const products = await Product.find({ isActive: true, isNewArrival: true })
+    products = await Product.find({ isActive: true, isNewArrival: true })
       .populate("category", "name slug")
       .sort({ createdAt: -1 })
       .limit(8)
       .lean();
-    return (
-      <ProductGrid
-        products={JSON.parse(JSON.stringify(products))}
-        title="New Arrivals"
-        subtitle="The latest additions to our collection"
-        viewAllHref="/new-arrivals"
-        viewAllLabel="View All New Arrivals"
-        titleKey="section.newArrivals"
-        subtitleKey="section.newArrivalsSubtitle"
-        viewAllLabelKey="section.viewAllNew"
-      />
-    );
   } catch {
     return null;
   }
+  return (
+    <ProductGrid
+      products={JSON.parse(JSON.stringify(products))}
+      title="New Arrivals"
+      subtitle="The latest additions to our collection"
+      viewAllHref="/new-arrivals"
+      viewAllLabel="View All New Arrivals"
+      titleKey="section.newArrivals"
+      subtitleKey="section.newArrivalsSubtitle"
+      viewAllLabelKey="section.viewAllNew"
+    />
+  );
 }
 
 async function FeaturedSection() {
+  let products: unknown[] = [];
   try {
     await dbConnect();
-    const products = await Product.find({ isActive: true, isFeatured: true })
+    products = await Product.find({ isActive: true, isFeatured: true })
       .populate("category", "name slug")
       .sort({ createdAt: -1 })
       .limit(8)
       .lean();
-    return (
-      <ProductGrid
-        products={JSON.parse(JSON.stringify(products))}
-        title="Featured Collection"
-        subtitle="Handpicked pieces from our finest selection"
-        viewAllHref="/featured"
-        viewAllLabel="View Featured"
-        titleKey="section.featured"
-        subtitleKey="section.featuredSubtitle"
-        viewAllLabelKey="section.viewFeatured"
-      />
-    );
   } catch {
     return null;
   }
+  return (
+    <ProductGrid
+      products={JSON.parse(JSON.stringify(products))}
+      title="Featured Collection"
+      subtitle="Handpicked pieces from our finest selection"
+      viewAllHref="/featured"
+      viewAllLabel="View Featured"
+      titleKey="section.featured"
+      subtitleKey="section.featuredSubtitle"
+      viewAllLabelKey="section.viewFeatured"
+    />
+  );
 }
 
 export default function HomePage() {
