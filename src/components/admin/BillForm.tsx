@@ -497,7 +497,7 @@ export default function BillForm() {
 
       <form
         onSubmit={handleSubmit(onSubmit)}
-        className="grid grid-cols-1 lg:grid-cols-3 gap-6"
+        className="grid grid-cols-1 lg:grid-cols-3 gap-6 pb-24 lg:pb-0"
       >
         {/* â”€â”€ Left column â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         <div className="lg:col-span-2 space-y-6">
@@ -1107,6 +1107,43 @@ export default function BillForm() {
           </div>
         </div>
       </form>
+
+      {/* Mobile sticky submit bar — always visible above mobile nav */}
+      {billItems.length > 0 && (
+        <div className="fixed bottom-17 left-0 right-0 bg-white border-t border-charcoal-200 px-4 py-3 z-30 lg:hidden shadow-[0_-4px_12px_rgba(0,0,0,0.08)]">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-[11px] text-charcoal-400 leading-none">Final Amount</p>
+              <PriceDisplay amount={finalAmount} size="lg" />
+              {unpaidFromBill > 0 && (
+                <p className="text-[10px] text-red-500 flex items-center gap-0.5 mt-0.5">
+                  <AlertTriangle size={10} />
+                  {formatCurrency(unpaidFromBill)} debt
+                </p>
+              )}
+            </div>
+            <Button
+              type="button"
+              variant="primary"
+              disabled={isSubmitting}
+              onClick={handleSubmit(onSubmit)}
+              className="shrink-0"
+            >
+              {isSubmitting ? (
+                <>
+                  <span className="animate-spin">⏳</span>
+                  Generating…
+                </>
+              ) : (
+                <>
+                  <FileText size={16} />
+                  Generate Bill
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import Bill from "@/models/Bill";
-import Customer from "@/models/Customer";
 
 export const dynamic = "force-dynamic";
 
@@ -36,7 +35,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
   }
 }
 
-// DELETE /api/bills/:id — Delete a bill and reverse customer debt
+// DELETE /api/bills/:id — Delete a bill (does NOT affect customer debt)
 export async function DELETE(_request: NextRequest, { params }: RouteParams) {
   try {
     await dbConnect();
@@ -49,43 +48,6 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
         { success: false, error: "Bill not found" },
         { status: 404 }
       );
-    }
-
-    // Reverse customer debt if the bill was linked to a customer
-    if (bill.customerRef) {
-      const customer = await Customer.findById(bill.customerRef);
-      if (customer) {
-        const unpaidFromBill = Math.max(
-          0,
-          bill.finalAmount - (bill.amountPaid || 0)
-        );
-        const debtBefore = customer.totalDebt;
-        const debtAfter = Math.max(0, debtBefore - unpaidFromBill);
-
-        customer.totalDebt = debtAfter;
-        customer.totalPurchases = Math.max(
-          0,
-          customer.totalPurchases - bill.finalAmount
-        );
-        customer.totalPaid = Math.max(
-          0,
-          customer.totalPaid - (bill.amountPaid || 0)
-        );
-        customer.billCount = Math.max(0, customer.billCount - 1);
-
-        customer.paymentHistory.push({
-          billNumber: bill.billNumber,
-          billAmount: bill.finalAmount,
-          amountPaid: 0,
-          debtAdded: -unpaidFromBill,
-          debtBefore,
-          debtAfter,
-          note: `Bill ${bill.billNumber} deleted — debt reversed`,
-          date: new Date(),
-        });
-
-        await customer.save();
-      }
     }
 
     await Bill.findByIdAndDelete(id);
