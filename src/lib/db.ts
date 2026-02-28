@@ -35,11 +35,12 @@ async function dbConnect(): Promise<typeof mongoose> {
   // If we already have a live connection, verify it's still responsive
   if (cached.conn) {
     const readyState = cached.conn.connection.readyState;
-    // 1 = connected, 2 = connecting
+    // 1 = connected — reuse immediately
     if (readyState === 1) {
       return cached.conn;
     }
-    // Connection is broken — clear the cache and reconnect
+    // 2 = connecting — wait for the existing promise below
+    // 0 or 3 = disconnected / disconnecting — clear and reconnect
     if (readyState !== 2) {
       cached.conn = null;
       cached.promise = null;
@@ -48,15 +49,17 @@ async function dbConnect(): Promise<typeof mongoose> {
 
   if (!cached.promise) {
     const opts = {
-      bufferCommands: false,
+      // Allow commands to queue while the connection is establishing
+      // prevents intermittent empty results on concurrent requests
+      bufferCommands: true,
       maxPoolSize: 10,
       serverSelectionTimeoutMS: 10000,
       connectTimeoutMS: 10000,
       socketTimeoutMS: 20000,
     };
 
-    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
-      return mongoose;
+    cached.promise = mongoose.connect(MONGODB_URI, opts).then((m) => {
+      return m;
     });
   }
 

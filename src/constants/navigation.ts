@@ -7,6 +7,7 @@ import {
   Receipt,
   BarChart3,
   Settings,
+  Users,
   type LucideIcon,
 } from "lucide-react";
 
@@ -49,6 +50,11 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
     icon: BarChart3,
   },
   {
+    title: "Customers",
+    href: "/admin/customers",
+    icon: Users,
+  },
+  {
     title: "Bills",
     href: "/admin/bills",
     icon: Receipt,
@@ -88,6 +94,11 @@ export const ADMIN_MORE_NAV_ITEMS: NavItem[] = [
     title: "Gemstones",
     href: "/admin/gemstones",
     icon: Gem,
+  },
+  {
+    title: "Customers",
+    href: "/admin/customers",
+    icon: Users,
   },
   {
     title: "Bills",

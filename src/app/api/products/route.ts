@@ -6,6 +6,8 @@ import { ITEMS_PER_PAGE } from "@/constants";
 import { generateProductCode } from "@/lib/utils";
 import { calculateProductPrice } from "@/lib/pricing";
 
+export const dynamic = "force-dynamic";
+
 // GET /api/products — List products with pagination, filters, search
 export async function GET(request: NextRequest) {
   try {

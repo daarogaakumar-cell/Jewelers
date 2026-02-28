@@ -4,6 +4,8 @@ import Product from "@/models/Product";
 import { productUpdateSchema } from "@/lib/validators/product";
 import { calculateProductPrice } from "@/lib/pricing";
 
+export const dynamic = "force-dynamic";
+
 // GET /api/products/[id] — Get single product
 export async function GET(
   _request: NextRequest,

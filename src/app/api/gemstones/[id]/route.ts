@@ -3,6 +3,8 @@ import dbConnect from "@/lib/db";
 import Gemstone from "@/models/Gemstone";
 import { gemstoneUpdateSchema } from "@/lib/validators/gemstone";
 
+export const dynamic = "force-dynamic";
+
 interface RouteParams {
   params: Promise<{ id: string }>;
 }

@@ -3,6 +3,8 @@ import dbConnect from "@/lib/db";
 import Category from "@/models/Category";
 import { categoryUpdateSchema } from "@/lib/validators/category";
 
+export const dynamic = "force-dynamic";
+
 interface RouteParams {
   params: Promise<{ id: string }>;
 }

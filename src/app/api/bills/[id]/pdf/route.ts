@@ -3,6 +3,8 @@ import dbConnect from "@/lib/db";
 import Bill from "@/models/Bill";
 import { generateBillPDF } from "@/lib/pdf";
 
+export const dynamic = "force-dynamic";
+
 interface RouteParams {
   params: Promise<{ id: string }>;
 }

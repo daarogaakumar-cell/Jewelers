@@ -19,6 +19,8 @@ import {
   Minus,
   Trash2,
   ShoppingCart,
+  AlertTriangle,
+  Users,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
@@ -41,6 +43,7 @@ const billFormSchema = z.object({
   customerAddress: z.string().optional().default(""),
   discountType: z.enum(["fixed", "percentage"]).default("fixed"),
   discountValue: z.number().min(0).default(0),
+  amountPaid: z.number().min(0).default(0),
   paymentMode: z
     .enum(["cash", "card", "upi", "bank_transfer"])
     .default("cash"),
@@ -63,6 +66,17 @@ interface BillItem {
   quantity: number;
 }
 
+interface ExistingCustomer {
+  _id: string;
+  name: string;
+  phone: string;
+  email?: string;
+  address?: string;
+  totalDebt: number;
+  totalPurchases: number;
+  billCount: number;
+}
+
 export default function BillForm() {
   const router = useRouter();
 
@@ -73,6 +87,16 @@ export default function BillForm() {
 
   // Bill items (cart)
   const [billItems, setBillItems] = useState<BillItem[]>([]);
+
+  // Customer search & linking
+  const [customerSearch, setCustomerSearch] = useState("");
+  const [customerResults, setCustomerResults] = useState<ExistingCustomer[]>([]);
+  const [isSearchingCustomer, setIsSearchingCustomer] = useState(false);
+  const [linkedCustomer, setLinkedCustomer] = useState<ExistingCustomer | null>(null);
+  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
+
+  // Payment mode
+  const [payFullAmount, setPayFullAmount] = useState(true);
 
   // Discount
   const [discountAmount, setDiscountAmount] = useState(0);
@@ -98,6 +122,7 @@ export default function BillForm() {
       customerAddress: "",
       discountType: "fixed",
       discountValue: 0,
+      amountPaid: 0,
       paymentMode: "cash",
       notes: "",
     },
@@ -105,6 +130,7 @@ export default function BillForm() {
 
   const discountType = watch("discountType");
   const discountValue = watch("discountValue");
+  const amountPaid = watch("amountPaid");
 
   // Total across all items
   const itemsTotal = billItems.reduce(
@@ -129,34 +155,146 @@ export default function BillForm() {
 
   const finalAmount = Math.max(0, itemsTotal - discountAmount);
 
+  // Auto-set amountPaid when payFullAmount is true
+  useEffect(() => {
+    if (payFullAmount) {
+      setValue("amountPaid", Math.round(finalAmount * 100) / 100);
+    }
+  }, [payFullAmount, finalAmount, setValue]);
+
+  // Calculate debt impact
+  const existingDebt = linkedCustomer?.totalDebt || 0;
+  const unpaidFromBill = Math.max(0, finalAmount - (amountPaid || 0));
+  const newTotalDebt = existingDebt + unpaidFromBill;
+
+  // Product search with retry
+  const searchProducts = useCallback(async (query: string) => {
+    if (!query || query.length < 2) {
+      setProductResults([]);
+      setIsSearching(false);
+      return;
+    }
+    setIsSearching(true);
+
+    // Retry up to 2 times on failure
+    for (let attempt = 0; attempt <= 2; attempt++) {
+      try {
+        const ts = Date.now();
+        const res = await fetch(
+          `/api/products?search=${encodeURIComponent(query)}&limit=8&_t=${ts}`,
+          { cache: "no-store" }
+        );
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (data.success) {
+          setProductResults(data.data || []);
+          setIsSearching(false);
+          return;
+        }
+        throw new Error(data.error || "Search failed");
+      } catch {
+        if (attempt === 2) {
+          setProductResults([]);
+          toast.error("Failed to search products. Please try again.");
+        } else {
+          await new Promise((r) => setTimeout(r, 500));
+        }
+      }
+    }
+    setIsSearching(false);
+  }, []);
+
   // Debounced product search
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const debouncedSearch = useCallback(
-    debounce(async (query: unknown) => {
-      const q = query as string;
-      if (!q || q.length < 2) {
-        setProductResults([]);
-        return;
-      }
-      setIsSearching(true);
-      try {
-        const res = await fetch(
-          `/api/products?search=${encodeURIComponent(q)}&limit=8`
-        );
-        const data = await res.json();
-        if (data.success) setProductResults(data.data);
-      } catch {
-        // Silently fail
-      } finally {
-        setIsSearching(false);
-      }
+    debounce((query: unknown) => {
+      searchProducts(query as string);
     }, 300),
-    []
+    [searchProducts]
   );
 
   useEffect(() => {
     debouncedSearch(productSearch);
   }, [productSearch, debouncedSearch]);
+
+  // Customer search
+  const searchCustomers = useCallback(async (query: string) => {
+    if (!query || query.length < 2) {
+      setCustomerResults([]);
+      setIsSearchingCustomer(false);
+      return;
+    }
+    setIsSearchingCustomer(true);
+    try {
+      const res = await fetch(
+        `/api/customers?search=${encodeURIComponent(query)}&limit=5`
+      );
+      const data = await res.json();
+      if (data.success) {
+        setCustomerResults(data.data || []);
+      }
+    } catch {
+      setCustomerResults([]);
+    }
+    setIsSearchingCustomer(false);
+  }, []);
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const debouncedCustomerSearch = useCallback(
+    debounce((query: unknown) => {
+      searchCustomers(query as string);
+    }, 300),
+    [searchCustomers]
+  );
+
+  useEffect(() => {
+    if (customerSearch && !linkedCustomer) {
+      setShowCustomerDropdown(true);
+      debouncedCustomerSearch(customerSearch);
+    } else {
+      setShowCustomerDropdown(false);
+    }
+  }, [customerSearch, debouncedCustomerSearch, linkedCustomer]);
+
+  // Auto-lookup customer when phone is typed
+  const watchedPhone = watch("customerPhone");
+  useEffect(() => {
+    if (watchedPhone && watchedPhone.length >= 10 && !linkedCustomer) {
+      const lookupByPhone = async () => {
+        try {
+          const res = await fetch(
+            `/api/customers?phone=${encodeURIComponent(watchedPhone)}`
+          );
+          const data = await res.json();
+          if (data.success && data.data && data.data.length > 0) {
+            const found = data.data[0];
+            linkCustomer(found);
+          }
+        } catch {
+          // Silently fail
+        }
+      };
+      lookupByPhone();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watchedPhone]);
+
+  /** Link an existing customer to this bill */
+  const linkCustomer = (customer: ExistingCustomer) => {
+    setLinkedCustomer(customer);
+    setValue("customerName", customer.name);
+    setValue("customerPhone", customer.phone);
+    setValue("customerEmail", customer.email || "");
+    setValue("customerAddress", customer.address || "");
+    setCustomerSearch("");
+    setCustomerResults([]);
+    setShowCustomerDropdown(false);
+  };
+
+  /** Unlink customer */
+  const unlinkCustomer = () => {
+    setLinkedCustomer(null);
+  };
 
   /** Add product to cart (or increment qty if already there) */
   const addProduct = (product: ProductSearchResult) => {
@@ -200,6 +338,13 @@ export default function BillForm() {
       return;
     }
 
+    // Validate amountPaid doesn't exceed finalAmount
+    const paid = values.amountPaid || 0;
+    if (paid > finalAmount) {
+      toast.error("Amount paid cannot exceed the final amount");
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const payload = {
@@ -213,6 +358,7 @@ export default function BillForm() {
           email: values.customerEmail || undefined,
           address: values.customerAddress || undefined,
         },
+        customerRef: linkedCustomer?._id || undefined,
         discount:
           values.discountValue > 0
             ? {
@@ -222,24 +368,41 @@ export default function BillForm() {
               }
             : undefined,
         finalAmount: Math.round(finalAmount * 100) / 100,
+        amountPaid: Math.round(paid * 100) / 100,
         paymentMode: values.paymentMode,
         notes: values.notes,
       };
 
-      const res = await fetch("/api/bills", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      // Retry up to 2 times on failure
+      let lastError = "Failed to create bill";
+      for (let attempt = 0; attempt <= 2; attempt++) {
+        try {
+          const res = await fetch("/api/bills", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
 
-      const data = await res.json();
-      if (data.success) {
-        setCreatedBillId(data.data._id);
-        setIsSuccess(true);
-        toast.success(data.message || "Bill created successfully!");
-      } else {
-        toast.error(data.error || "Failed to create bill");
+          const data = await res.json();
+          if (data.success) {
+            setCreatedBillId(data.data._id);
+            setIsSuccess(true);
+            toast.success(data.message || "Bill created successfully!");
+            return;
+          }
+          lastError = data.error || "Failed to create bill";
+
+          // Don't retry on validation errors (4xx)
+          if (res.status >= 400 && res.status < 500) break;
+        } catch {
+          lastError = "Network error — please check your connection";
+          if (attempt < 2) {
+            await new Promise((r) => setTimeout(r, 800));
+          }
+        }
       }
+
+      toast.error(lastError);
     } catch {
       toast.error("Failed to create bill");
     } finally {
@@ -528,6 +691,115 @@ export default function BillForm() {
                 </CardTitle>
               </CardHeader>
               <div className="px-4 pb-4 md:px-6 md:pb-6 space-y-4">
+                {/* Customer Search */}
+                <div className="relative">
+                  <label className="block text-sm font-medium text-charcoal-600 mb-1">
+                    Search Existing Customer
+                  </label>
+                  <div className="relative">
+                    <Users
+                      size={16}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-charcoal-400"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Search by name or phone to link existing customer…"
+                      value={customerSearch}
+                      onChange={(e) => setCustomerSearch(e.target.value)}
+                      disabled={!!linkedCustomer}
+                      className="w-full h-11 pl-9 pr-4 rounded-xl border border-charcoal-200 bg-white text-sm text-charcoal-700 focus:outline-none focus:ring-2 focus:ring-gold-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                    />
+                  </div>
+
+                  {/* Customer search dropdown */}
+                  {showCustomerDropdown &&
+                    (customerResults.length > 0 || isSearchingCustomer) && (
+                      <div className="absolute z-10 top-full left-0 right-0 mt-1 bg-white border border-charcoal-100 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                        {isSearchingCustomer ? (
+                          <div className="p-4 space-y-2">
+                            {[0, 1].map((i) => (
+                              <Skeleton key={i} className="h-12 w-full" />
+                            ))}
+                          </div>
+                        ) : (
+                          customerResults.map((c) => (
+                            <button
+                              key={c._id}
+                              type="button"
+                              onClick={() => linkCustomer(c)}
+                              className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gold-50 transition-colors border-b border-charcoal-50 last:border-0"
+                            >
+                              <div className="w-9 h-9 rounded-full bg-gold-50 flex items-center justify-center shrink-0">
+                                <User size={14} className="text-gold-600" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-charcoal-700 truncate">
+                                  {c.name}
+                                </p>
+                                <p className="text-xs text-charcoal-400">
+                                  {c.phone}
+                                </p>
+                              </div>
+                              {c.totalDebt > 0 && (
+                                <Badge variant="rose" size="sm">
+                                  Debt: {formatCurrency(c.totalDebt)}
+                                </Badge>
+                              )}
+                              <span className="text-xs text-gold-600 font-semibold border border-gold-300 rounded-full px-2 py-0.5">
+                                Select
+                              </span>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    )}
+                </div>
+
+                {/* Linked Customer Banner */}
+                {linkedCustomer && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex items-center gap-3 p-3 rounded-xl border border-gold-200 bg-gold-50/50"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-gold-100 flex items-center justify-center shrink-0">
+                      <User size={16} className="text-gold-700" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-charcoal-700">
+                        {linkedCustomer.name}{" "}
+                        <span className="text-xs font-normal text-charcoal-400">
+                          (existing customer)
+                        </span>
+                      </p>
+                      <div className="flex items-center gap-3 mt-0.5">
+                        <span className="text-xs text-charcoal-500">
+                          {linkedCustomer.phone}
+                        </span>
+                        <span className="text-xs text-charcoal-400">
+                          {linkedCustomer.billCount} bills
+                        </span>
+                        {linkedCustomer.totalDebt > 0 && (
+                          <span className="text-xs font-bold text-red-600 flex items-center gap-0.5">
+                            <AlertTriangle size={10} />
+                            Debt: {formatCurrency(linkedCustomer.totalDebt)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={unlinkCustomer}
+                      className="shrink-0 text-charcoal-400 hover:text-red-500"
+                    >
+                      <Trash2 size={14} />
+                      Unlink
+                    </Button>
+                  </motion.div>
+                )}
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Input
                     label="Customer Name *"
@@ -580,9 +852,86 @@ export default function BillForm() {
                   options={[...PAYMENT_MODES]}
                   {...register("paymentMode")}
                 />
+
+                {/* Payment amount toggle */}
+                {billItems.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          checked={payFullAmount}
+                          onChange={() => {
+                            setPayFullAmount(true);
+                            setValue(
+                              "amountPaid",
+                              Math.round(finalAmount * 100) / 100
+                            );
+                          }}
+                          className="w-4 h-4 text-gold-500 accent-gold-500"
+                        />
+                        <span className="text-sm text-charcoal-700">
+                          Full Payment
+                        </span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          checked={!payFullAmount}
+                          onChange={() => {
+                            setPayFullAmount(false);
+                            setValue("amountPaid", 0);
+                          }}
+                          className="w-4 h-4 text-gold-500 accent-gold-500"
+                        />
+                        <span className="text-sm text-charcoal-700">
+                          Partial / No Payment
+                        </span>
+                      </label>
+                    </div>
+
+                    {!payFullAmount && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                      >
+                        <Input
+                          label="Amount Paid"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          max={finalAmount}
+                          placeholder="0"
+                          {...register("amountPaid", {
+                            valueAsNumber: true,
+                          })}
+                        />
+                        {unpaidFromBill > 0 && (
+                          <div className="mt-2 p-2 rounded-lg bg-amber-50 border border-amber-200">
+                            <p className="text-xs text-amber-800 flex items-center gap-1">
+                              <AlertTriangle size={12} />
+                              <span className="font-semibold">
+                                {formatCurrency(unpaidFromBill)}
+                              </span>{" "}
+                              will be added to customer&apos;s debt
+                            </p>
+                            {existingDebt > 0 && (
+                              <p className="text-xs text-amber-700 mt-0.5 ml-4">
+                                Existing debt: {formatCurrency(existingDebt)} →
+                                New total: {formatCurrency(newTotalDebt)}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </motion.div>
+                    )}
+                  </div>
+                )}
+
                 <Textarea
                   label="Notes"
-                  placeholder="Any additional notesâ€¦"
+                  placeholder="Any additional notes…"
                   rows={3}
                   {...register("notes")}
                 />
@@ -682,6 +1031,52 @@ export default function BillForm() {
                         <PriceDisplay amount={finalAmount} size="lg" />
                       </div>
                     </div>
+
+                    {/* Payment & Debt Summary */}
+                    {billItems.length > 0 && (
+                      <div className="space-y-2 pt-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-charcoal-500">Amount Paid</span>
+                          <span className="font-mono text-green-600 font-medium">
+                            {formatCurrency(amountPaid || 0)}
+                          </span>
+                        </div>
+                        {unpaidFromBill > 0 && (
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-charcoal-500 flex items-center gap-1">
+                              <AlertTriangle
+                                size={12}
+                                className="text-amber-500"
+                              />
+                              Unpaid (→ Debt)
+                            </span>
+                            <span className="font-mono text-red-600 font-medium">
+                              {formatCurrency(unpaidFromBill)}
+                            </span>
+                          </div>
+                        )}
+                        {existingDebt > 0 && (
+                          <>
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-charcoal-500">
+                                Existing Debt
+                              </span>
+                              <span className="font-mono text-red-500">
+                                {formatCurrency(existingDebt)}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between text-sm border-t border-charcoal-100 pt-2">
+                              <span className="text-charcoal-700 font-semibold">
+                                New Total Debt
+                              </span>
+                              <span className="font-mono text-red-600 font-bold">
+                                {formatCurrency(newTotalDebt)}
+                              </span>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    )}
 
                     <Button
                       type="submit"

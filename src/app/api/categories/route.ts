@@ -3,6 +3,8 @@ import dbConnect from "@/lib/db";
 import Category from "@/models/Category";
 import { categoryCreateSchema } from "@/lib/validators/category";
 
+export const dynamic = "force-dynamic";
+
 // GET /api/categories — List all categories
 export async function GET() {
   try {

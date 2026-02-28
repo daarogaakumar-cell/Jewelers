@@ -55,11 +55,43 @@ export function ProductForm({ mode, initialData, productId }: ProductFormProps) 
   >([]);
 
   useEffect(() => {
-    fetch("/api/categories")
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.success) setCategories(d.data);
-      });
+    let cancelled = false;
+
+    const fetchCategories = async (retries = 3) => {
+      for (let attempt = 0; attempt < retries; attempt++) {
+        try {
+          const ts = Date.now();
+          const res = await fetch(`/api/categories?_t=${ts}`, { cache: "no-store" });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const d = await res.json();
+          if (d.success && d.data?.length > 0) {
+            if (!cancelled) setCategories(d.data);
+            return;
+          }
+          // API returned success but empty data — may be a timing issue, retry
+          if (attempt < retries - 1) {
+            await new Promise((r) => setTimeout(r, 600));
+          }
+        } catch {
+          if (attempt < retries - 1) {
+            await new Promise((r) => setTimeout(r, 600));
+          }
+        }
+      }
+      // Final fallback attempt
+      try {
+        const res = await fetch(`/api/categories?_t=${Date.now()}`, { cache: "no-store" });
+        const d = await res.json();
+        if (d.success && d.data) {
+          if (!cancelled) setCategories(d.data);
+        }
+      } catch {
+        // Exhausted all retries
+      }
+    };
+
+    fetchCategories();
+    return () => { cancelled = true; };
   }, []);
 
   const updateBasic = useCallback((data: BasicInfoData) => {

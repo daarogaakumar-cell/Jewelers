@@ -155,6 +155,38 @@ export interface IProduct {
   updatedAt: Date;
 }
 
+// ─── Customer Record (standalone) ────────────────────
+
+export interface IPaymentHistory {
+  _id?: Types.ObjectId;
+  bill?: Types.ObjectId;
+  billNumber?: string;
+  billAmount: number;
+  amountPaid: number;
+  debtAdded: number;
+  debtBefore: number;
+  debtAfter: number;
+  note?: string;
+  date: Date;
+}
+
+export interface ICustomerRecord {
+  _id: Types.ObjectId;
+  name: string;
+  phone: string;
+  email?: string;
+  address?: string;
+  totalDebt: number;
+  totalPurchases: number;
+  totalPaid: number;
+  billCount: number;
+  paymentHistory: IPaymentHistory[];
+  notes?: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 // ─── Bill ────────────────────────────────────────────
 
 export interface ICustomer {
@@ -181,10 +213,12 @@ export interface IBill {
   billNumber: string;
   product: Types.ObjectId;
   customer: ICustomer;
+  customerRef?: Types.ObjectId;
   productSnapshot: Record<string, unknown>;
   items?: IBillItem[];
   discount?: IDiscount;
   finalAmount: number;
+  amountPaid: number;
   paymentMode: "cash" | "card" | "upi" | "bank_transfer";
   notes?: string;
   generatedBy: Types.ObjectId;

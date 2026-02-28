@@ -114,7 +114,7 @@ export function DashboardContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const fetchDashboardData = useCallback(async (retries = 2) => {
+  const fetchDashboardData = useCallback(async (retries = 3) => {
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
         setIsLoading(true);
@@ -122,13 +122,17 @@ export function DashboardContent() {
 
         // Add cache-busting timestamp to prevent any browser/CDN caching
         const ts = Date.now();
-        const [productsRes, categoriesRes, metalsRes, gemstonesRes] =
-          await Promise.all([
-            fetch(`/api/products?limit=5&sort=-createdAt&_t=${ts}`, { cache: "no-store" }),
-            fetch(`/api/categories?_t=${ts}`, { cache: "no-store" }),
-            fetch(`/api/metals?_t=${ts}`, { cache: "no-store" }),
-            fetch(`/api/gemstones?_t=${ts}`, { cache: "no-store" }),
-          ]);
+
+        // Fetch sequentially in pairs to avoid overwhelming the DB connection
+        const [productsRes, categoriesRes] = await Promise.all([
+          fetch(`/api/products?limit=5&sort=-createdAt&_t=${ts}`, { cache: "no-store" }),
+          fetch(`/api/categories?_t=${ts}`, { cache: "no-store" }),
+        ]);
+
+        const [metalsRes, gemstonesRes] = await Promise.all([
+          fetch(`/api/metals?_t=${ts}`, { cache: "no-store" }),
+          fetch(`/api/gemstones?_t=${ts}`, { cache: "no-store" }),
+        ]);
 
         // Check if any response is not OK
         if (!productsRes.ok || !categoriesRes.ok || !metalsRes.ok || !gemstonesRes.ok) {
@@ -148,11 +152,23 @@ export function DashboardContent() {
           throw new Error("API returned unsuccessful response");
         }
 
+        const totalProducts = productsData.pagination?.total ?? productsData.data?.length ?? 0;
+        const totalCategories = categoriesData.data?.length ?? 0;
+        const totalMetals = metalsData.data?.length ?? 0;
+        const totalGemstones = gemstonesData.data?.length ?? 0;
+
+        // If all counts are 0 on first attempts, it's likely a stale connection — retry
+        if (attempt < retries && totalProducts === 0 && totalCategories === 0 && totalMetals === 0 && totalGemstones === 0) {
+          console.warn(`Dashboard attempt ${attempt + 1}: all counts are 0, retrying...`);
+          await new Promise((r) => setTimeout(r, 800));
+          continue;
+        }
+
         setStats({
-          totalProducts: productsData.pagination?.total || productsData.data?.length || 0,
-          totalCategories: categoriesData.data?.length || 0,
-          totalMetals: metalsData.data?.length || 0,
-          totalGemstones: gemstonesData.data?.length || 0,
+          totalProducts,
+          totalCategories,
+          totalMetals,
+          totalGemstones,
           recentProducts: productsData.data || [],
           metalPrices: metalsData.data || [],
           gemstonePrices: gemstonesData.data || [],
@@ -188,7 +204,7 @@ export function DashboardContent() {
           Failed to load dashboard
         </h2>
         <p className="text-sm text-charcoal-400 mb-4">{error}</p>
-        <Button variant="primary" onClick={fetchDashboardData}>
+        <Button variant="primary" onClick={() => fetchDashboardData()}>
           Retry
         </Button>
       </div>

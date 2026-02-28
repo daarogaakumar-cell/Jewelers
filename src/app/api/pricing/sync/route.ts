@@ -6,6 +6,8 @@ import Gemstone from "@/models/Gemstone";
 import PriceHistory from "@/models/PriceHistory";
 import { calculateProductPrice } from "@/lib/pricing";
 
+export const dynamic = "force-dynamic";
+
 /**
  * POST /api/pricing/sync
  * Update a metal/gemstone variant price and batch-recalculate all affected products.

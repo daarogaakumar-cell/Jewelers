@@ -77,13 +77,33 @@ export function StepComposition({
   const [gemstones, setGemstones] = useState<GemstoneApiData[]>([]);
 
   useEffect(() => {
-    Promise.all([
-      fetch("/api/metals").then((r) => r.json()),
-      fetch("/api/gemstones").then((r) => r.json()),
-    ]).then(([metalsData, gemstonesData]) => {
-      if (metalsData.success) setMetals(metalsData.data);
-      if (gemstonesData.success) setGemstones(gemstonesData.data);
-    });
+    let cancelled = false;
+
+    const fetchData = async (retries = 3) => {
+      for (let attempt = 0; attempt < retries; attempt++) {
+        try {
+          const ts = Date.now();
+          const [metalsData, gemstonesData] = await Promise.all([
+            fetch(`/api/metals?_t=${ts}`, { cache: "no-store" }).then((r) => r.json()),
+            fetch(`/api/gemstones?_t=${ts}`, { cache: "no-store" }).then((r) => r.json()),
+          ]);
+          if (!cancelled) {
+            if (metalsData.success) setMetals(metalsData.data || []);
+            if (gemstonesData.success) setGemstones(gemstonesData.data || []);
+          }
+          // If we got data, we're done
+          if (metalsData.success && gemstonesData.success) return;
+        } catch {
+          // Retry on failure
+        }
+        if (attempt < retries - 1) {
+          await new Promise((r) => setTimeout(r, 600));
+        }
+      }
+    };
+
+    fetchData();
+    return () => { cancelled = true; };
   }, []);
 
   // Metal handlers

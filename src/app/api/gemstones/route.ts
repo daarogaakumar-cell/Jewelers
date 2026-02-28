@@ -3,12 +3,21 @@ import dbConnect from "@/lib/db";
 import Gemstone from "@/models/Gemstone";
 import { gemstoneCreateSchema } from "@/lib/validators/gemstone";
 
+export const dynamic = "force-dynamic";
+
 // GET /api/gemstones — List all gemstones
 export async function GET() {
   try {
     await dbConnect();
     const gemstones = await Gemstone.find().sort({ name: 1 }).lean();
-    return NextResponse.json({ success: true, data: gemstones });
+    return NextResponse.json(
+      { success: true, data: gemstones },
+      {
+        headers: {
+          "Cache-Control": "no-store, max-age=0",
+        },
+      }
+    );
   } catch (error) {
     console.error("GET /api/gemstones error:", error);
     return NextResponse.json(

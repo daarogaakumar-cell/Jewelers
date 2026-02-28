@@ -45,6 +45,10 @@ const BillSchema = new Schema<IBill>(
       type: CustomerSchema,
       required: true,
     },
+    customerRef: {
+      type: Schema.Types.ObjectId,
+      ref: "Customer",
+    },
     productSnapshot: {
       type: Schema.Types.Mixed,
     },
@@ -57,6 +61,11 @@ const BillSchema = new Schema<IBill>(
     finalAmount: {
       type: Number,
       required: [true, "Final amount is required"],
+      min: 0,
+    },
+    amountPaid: {
+      type: Number,
+      default: 0,
       min: 0,
     },
     paymentMode: {

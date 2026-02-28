@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import PriceHistory from "@/models/PriceHistory";
 
+export const dynamic = "force-dynamic";
+
 // GET /api/pricing/history — Get price change history
 export async function GET() {
   try {

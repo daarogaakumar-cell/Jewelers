@@ -5,6 +5,8 @@ import Metal from "@/models/Metal";
 import Gemstone from "@/models/Gemstone";
 import { calculateProductPrice } from "@/lib/pricing";
 
+export const dynamic = "force-dynamic";
+
 /**
  * GET /api/pricing/preview
  * Preview the impact of a price change on affected products.

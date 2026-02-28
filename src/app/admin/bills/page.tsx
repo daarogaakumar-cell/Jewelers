@@ -12,6 +12,8 @@ import {
   Calendar,
   User,
   Phone,
+  FileSpreadsheet,
+  ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
@@ -71,6 +73,8 @@ export default function BillsListPage() {
   const [total, setTotal] = useState(0);
   const [deleteTarget, setDeleteTarget] = useState<BillItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   const fetchBills = useCallback(async () => {
     try {
@@ -138,6 +142,38 @@ export default function BillsListPage() {
     }
   };
 
+  const handleExport = async (mode: "all" | "monthly" | "quarterly" | "custom") => {
+    setIsExporting(true);
+    setShowExportMenu(false);
+    try {
+      const params = new URLSearchParams();
+      if (mode === "monthly") params.set("period", "monthly");
+      else if (mode === "quarterly") params.set("period", "quarterly");
+      else if (mode === "custom") {
+        if (dateFrom) params.set("from", dateFrom);
+        if (dateTo) params.set("to", dateTo);
+      }
+      const url = `/api/bills/export?${params}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Export failed");
+      const blob = await res.blob();
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      const disposition = res.headers.get("Content-Disposition");
+      const filenameMatch = disposition?.match(/filename="(.+)"/);
+      a.download = filenameMatch ? filenameMatch[1] : "Bills-Export.xlsx";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(a.href);
+      toast.success("Bills exported successfully");
+    } catch {
+      toast.error("Failed to export bills");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <Breadcrumb
@@ -156,12 +192,55 @@ export default function BillsListPage() {
             {total} {total === 1 ? "bill" : "bills"} generated
           </p>
         </div>
-        <Link href="/admin/bills/new">
-          <Button variant="primary">
-            <Plus size={18} />
-            Generate Bill
-          </Button>
-        </Link>
+        <div className="flex gap-2 flex-wrap">
+          <div className="relative">
+            <Button
+              variant="outline"
+              onClick={() => setShowExportMenu(!showExportMenu)}
+              disabled={isExporting}
+            >
+              <FileSpreadsheet size={18} />
+              {isExporting ? "Exporting..." : "Export Excel"}
+              <ChevronDown size={14} />
+            </Button>
+            {showExportMenu && (
+              <div className="absolute right-0 top-full mt-1 w-56 bg-white border border-charcoal-200 rounded-xl shadow-lg z-50 py-1">
+                <button
+                  onClick={() => handleExport("all")}
+                  className="w-full text-left px-4 py-2.5 text-sm text-charcoal-700 hover:bg-charcoal-50 transition-colors"
+                >
+                  All Bills
+                </button>
+                <button
+                  onClick={() => handleExport("monthly")}
+                  className="w-full text-left px-4 py-2.5 text-sm text-charcoal-700 hover:bg-charcoal-50 transition-colors"
+                >
+                  This Month
+                </button>
+                <button
+                  onClick={() => handleExport("quarterly")}
+                  className="w-full text-left px-4 py-2.5 text-sm text-charcoal-700 hover:bg-charcoal-50 transition-colors"
+                >
+                  This Quarter
+                </button>
+                {(dateFrom || dateTo) && (
+                  <button
+                    onClick={() => handleExport("custom")}
+                    className="w-full text-left px-4 py-2.5 text-sm text-charcoal-700 hover:bg-charcoal-50 transition-colors border-t border-charcoal-100"
+                  >
+                    Custom Range ({dateFrom || "Start"} to {dateTo || "Present"})
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+          <Link href="/admin/bills/new">
+            <Button variant="primary">
+              <Plus size={18} />
+              Generate Bill
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Filters */}

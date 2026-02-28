@@ -26,13 +26,19 @@ export const billCreateSchema = z
     // Multiple items (new multi-product flow)
     items: z.array(billItemSchema).optional(),
     customer: customerSchema,
+    // Link to existing customer record
+    customerRef: z.string().optional(),
     discount: discountSchema.optional(),
     finalAmount: z.number().min(0),
+    amountPaid: z.number().min(0).default(0),
     paymentMode: z.enum(["cash", "card", "upi", "bank_transfer"]).default("cash"),
     notes: z.string().optional().default(""),
   })
   .refine((d) => d.product || (d.items && d.items.length > 0), {
     message: "Either product or at least one item is required",
+  })
+  .refine((d) => d.amountPaid <= d.finalAmount, {
+    message: "Amount paid cannot exceed the final amount",
   });
 
 export type BillCreateInput = z.infer<typeof billCreateSchema>;

@@ -2,10 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import Bill from "@/models/Bill";
 import Product from "@/models/Product";
+import Customer from "@/models/Customer";
 import { getNextSequence } from "@/models/Counter";
 import { billCreateSchema } from "@/lib/validators/bill";
 import { generateBillNumber } from "@/lib/utils";
 import { auth } from "@/lib/auth";
+
+export const dynamic = "force-dynamic";
 
 // GET /api/bills — List all bills with search and pagination
 export async function GET(request: NextRequest) {
@@ -172,19 +175,117 @@ export async function POST(request: NextRequest) {
     // Use the first item's snapshot as top-level productSnapshot (backward compat)
     const primarySnapshot = resolvedItems[0].productSnapshot;
 
+    // Determine amount paid (default: full payment)
+    const amountPaid =
+      validatedData.amountPaid !== undefined
+        ? validatedData.amountPaid
+        : validatedData.finalAmount;
+    const unpaidAmount = Math.max(0, validatedData.finalAmount - amountPaid);
+
     // Calculate discount against total (client already calculated, but re-validate)
     const bill = await Bill.create({
       billNumber,
       product: resolvedItems[0].product,
       customer: validatedData.customer,
+      customerRef: validatedData.customerRef || undefined,
       productSnapshot: primarySnapshot,
       items: resolvedItems,
       discount: validatedData.discount,
       finalAmount: validatedData.finalAmount,
+      amountPaid,
       paymentMode: validatedData.paymentMode,
       notes: validatedData.notes,
       generatedBy: session.user.id,
     });
+
+    // ── Customer debt management ───────────────────────────────────────────
+    // If a customerRef is provided, update the existing customer's debt
+    // If not, try to find by phone or create a new customer record
+    let customerRecord = null;
+
+    if (validatedData.customerRef) {
+      customerRecord = await Customer.findById(validatedData.customerRef);
+    }
+
+    if (!customerRecord && validatedData.customer.phone) {
+      customerRecord = await Customer.findOne({
+        phone: validatedData.customer.phone,
+      });
+    }
+
+    if (customerRecord) {
+      // Update existing customer
+      const debtBefore = customerRecord.totalDebt;
+      const debtAfter = debtBefore + unpaidAmount;
+
+      customerRecord.totalDebt = debtAfter;
+      customerRecord.totalPurchases += validatedData.finalAmount;
+      customerRecord.totalPaid += amountPaid;
+      customerRecord.billCount += 1;
+
+      // Update basic info if changed
+      customerRecord.name = validatedData.customer.name;
+      if (validatedData.customer.email)
+        customerRecord.email = validatedData.customer.email;
+      if (validatedData.customer.address)
+        customerRecord.address = validatedData.customer.address;
+
+      customerRecord.paymentHistory.push({
+        bill: bill._id,
+        billNumber,
+        billAmount: validatedData.finalAmount,
+        amountPaid,
+        debtAdded: unpaidAmount,
+        debtBefore,
+        debtAfter,
+        note:
+          amountPaid >= validatedData.finalAmount
+            ? "Full payment"
+            : amountPaid > 0
+            ? `Partial payment — ₹${unpaidAmount} added to debt`
+            : `No payment — ₹${unpaidAmount} added to debt`,
+        date: new Date(),
+      });
+
+      await customerRecord.save();
+
+      // Link bill to customer
+      bill.customerRef = customerRecord._id;
+      await bill.save();
+    } else {
+      // Create a new customer record automatically
+      const newCustomer = await Customer.create({
+        name: validatedData.customer.name,
+        phone: validatedData.customer.phone,
+        email: validatedData.customer.email || "",
+        address: validatedData.customer.address || "",
+        totalDebt: unpaidAmount,
+        totalPurchases: validatedData.finalAmount,
+        totalPaid: amountPaid,
+        billCount: 1,
+        paymentHistory: [
+          {
+            bill: bill._id,
+            billNumber,
+            billAmount: validatedData.finalAmount,
+            amountPaid,
+            debtAdded: unpaidAmount,
+            debtBefore: 0,
+            debtAfter: unpaidAmount,
+            note:
+              amountPaid >= validatedData.finalAmount
+                ? "Full payment — new customer"
+                : amountPaid > 0
+                ? `Partial payment — ₹${unpaidAmount} debt`
+                : `No payment — ₹${unpaidAmount} debt`,
+            date: new Date(),
+          },
+        ],
+      });
+
+      bill.customerRef = newCustomer._id;
+      await bill.save();
+    }
 
     return NextResponse.json(
       {

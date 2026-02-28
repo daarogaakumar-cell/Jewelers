@@ -69,11 +69,29 @@ export default function ProductsListPage() {
 
   // Fetch categories for filter
   useEffect(() => {
-    fetch("/api/categories")
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.success) setCategories(d.data);
-      });
+    let cancelled = false;
+
+    const fetchCategories = async (retries = 3) => {
+      for (let attempt = 0; attempt < retries; attempt++) {
+        try {
+          const ts = Date.now();
+          const r = await fetch(`/api/categories?_t=${ts}`, { cache: "no-store" });
+          const d = await r.json();
+          if (d.success && !cancelled) {
+            setCategories(d.data || []);
+            return;
+          }
+        } catch {
+          // retry
+        }
+        if (attempt < retries - 1) {
+          await new Promise((r) => setTimeout(r, 500));
+        }
+      }
+    };
+
+    fetchCategories();
+    return () => { cancelled = true; };
   }, []);
 
   const fetchProducts = useCallback(async () => {

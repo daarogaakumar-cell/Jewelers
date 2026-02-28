@@ -3,6 +3,8 @@ import dbConnect from "@/lib/db";
 import Metal from "@/models/Metal";
 import { metalCreateSchema } from "@/lib/validators/metal";
 
+export const dynamic = "force-dynamic";
+
 // GET /api/metals — List all metals
 export async function GET() {
   try {

@@ -3,6 +3,8 @@ import dbConnect from "@/lib/db";
 import Metal from "@/models/Metal";
 import { metalUpdateSchema } from "@/lib/validators/metal";
 
+export const dynamic = "force-dynamic";
+
 interface RouteParams {
   params: Promise<{ id: string }>;
 }
