@@ -14,8 +14,8 @@ interface RouteParams {
 const SHOP = {
   name: "Abhishek Jewelers",
   tagline: "Premium Gold & Diamond Jewelry",
-  address: "Main Market, Your City, State - 000000",
-  phone: "+91 98XXX XXXXX",
+  address: "Shop 44, Nonahara, Ghazipur, UP - 233303",
+  phone: "+91 89602 83274",
 };
 
 function fmtAmt(amount: number | undefined | null): string {

@@ -128,11 +128,11 @@ export default function PrivacyPolicyPage() {
                 <strong>Email:</strong> info@abhishekjewelers.com
               </li>
               <li>
-                <strong>Phone:</strong> +91 98765 43210
+                <strong>Phone:</strong> +91 89602 83274
               </li>
               <li>
-                <strong>Address:</strong> Shop No. 12, Main Market, City Center,
-                State — 110001
+                <strong>Address:</strong> Shop 44, Nonahara, Ghazipur,
+                UP — 233303
               </li>
             </ul>
           </section>

@@ -68,7 +68,7 @@ export function ContactForm() {
             id="phone"
             name="phone"
             required
-            placeholder="+91 98765 43210"
+            placeholder="+91 89602 83274"
             className="h-11 w-full rounded-lg border border-charcoal-200 bg-white px-4 text-sm text-charcoal-700 transition-colors placeholder:text-charcoal-300 focus:border-gold-500 focus:outline-none focus:ring-1 focus:ring-gold-500"
           />
         </div>

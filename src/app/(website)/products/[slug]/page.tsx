@@ -263,7 +263,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
             {/* CTAs */}
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <a
-                href={`https://wa.me/919876543210?text=${whatsappMessage}`}
+                href={`https://wa.me/918960283274?text=${whatsappMessage}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-gold-500 px-6 py-3.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-gold-600 hover:shadow-gold active:scale-[0.97]"
@@ -272,7 +272,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 Enquire on WhatsApp
               </a>
               <a
-                href="tel:+919876543210"
+                href="tel:+918960283274"
                 className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border border-charcoal-200 px-6 py-3.5 text-sm font-medium text-charcoal-600 transition-colors hover:bg-charcoal-50"
               >
                 <Phone className="h-4 w-4" />

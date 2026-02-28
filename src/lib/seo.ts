@@ -7,22 +7,22 @@ export const SITE_URL =
 export const SHOP_INFO = {
   name: APP_NAME,
   description: APP_DESCRIPTION,
-  phone: "+919876543210",
-  whatsapp: "+919876543210",
+  phone: "+918960283274",
+  whatsapp: "+918960283274",
   email: "info@abhishekjewelers.com",
   address: {
-    street: "Main Market Road",
-    locality: "Jewelry Market",
-    city: "New Delhi",
-    state: "Delhi",
-    postalCode: "110001",
+    street: "Shop 44, Nonahara",
+    locality: "Nonahara",
+    city: "Ghazipur",
+    state: "Uttar Pradesh",
+    postalCode: "233303",
     country: "IN",
   },
   hours: "Mon-Sat 10:00 AM - 8:00 PM",
   gstin: "07XXXXX1234X1ZX",
   coordinates: {
-    lat: 28.6139,
-    lng: 77.209,
+    lat: 25.5878,
+    lng: 83.5775,
   },
 };
 

@@ -58,7 +58,7 @@ export default function ContactPage() {
               </h3>
               <div className="mt-4 space-y-4">
                 <a
-                  href="tel:+919876543210"
+                  href="tel:+918960283274"
                   className="flex items-center gap-3 text-sm text-charcoal-500 transition-colors hover:text-gold-600"
                 >
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gold-50 text-gold-600">
@@ -66,12 +66,12 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <p className="font-medium text-charcoal-700">Phone</p>
-                    <p>+91 98765 43210</p>
+                    <p>+91 89602 83274</p>
                   </div>
                 </a>
 
                 <a
-                  href="https://wa.me/919876543210"
+                  href="https://wa.me/918960283274"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-3 text-sm text-charcoal-500 transition-colors hover:text-gold-600"
@@ -109,8 +109,8 @@ export default function ContactPage() {
                 <div className="flex items-start gap-3 text-sm text-charcoal-500">
                   <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-gold-600" />
                   <span>
-                    Shop No. 12, Main Market,<br />
-                    City Center, State — 110001
+                    Shop 44, Nonahara,<br />
+                    Ghazipur, UP — 233303
                   </span>
                 </div>
                 <div className="flex items-center gap-3 text-sm text-charcoal-500">
@@ -122,7 +122,7 @@ export default function ContactPage() {
               {/* Map Embed */}
               <div className="mt-4 overflow-hidden rounded-lg">
                 <iframe
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3502.2!2d77.2!3d28.6!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2z!5e0!3m2!1sen!2sin!4v1"
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d14400!2d83.5775!3d25.5878!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3991f0006adb1c0d%3A0x4c2b3e1b5e8e5e0!2sNonahara%2C%20Ghazipur%2C%20Uttar%20Pradesh%20233303!5e0!3m2!1sen!2sin!4v1"
                   width="100%"
                   height="200"
                   style={{ border: 0 }}
